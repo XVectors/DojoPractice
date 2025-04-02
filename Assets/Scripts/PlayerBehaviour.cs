@@ -9,25 +9,35 @@ public class PlayerBehaviour : MonoBehaviour
     public LayerMask groundLayer; // Слой земли
     public GameObject bullet;
     public float bulletSpeed = 100f;
+    public AudioClip damageSound;
+
 
     private float vInput;
     private float hInput;
     private Rigidbody rb;
     private CapsuleCollider col;
+    private GameBehaviour gameManager;
+    private AudioSource audioSource;
+
 
     void Start()
     {
         rb = GetComponent<Rigidbody>(); // Получаем компонент Rigidbody
         col = GetComponent<CapsuleCollider>(); // Получаем компонент CapsuleCollider
+
+        gameManager = GameObject.Find("GameManager").GetComponent<GameBehaviour>(); // Получаем ссылку на GameManager
+        audioSource = GetComponent<AudioSource>(); // Получаем компонент AudioSource
     }
 
    
     void Update()
     {       
-        Debug.Log($"IsGrounded: {IsGrounded()} | Jump Key: {Input.GetKeyDown(KeyCode.Space)}");
+       // Debug.Log($"IsGrounded: {IsGrounded()} | Jump Key: {Input.GetKeyDown(KeyCode.Space)}");
 
         vInput = Input.GetAxis("Vertical") * moveSpeed; // Ввод: вперед/назад
         hInput = Input.GetAxis("Horizontal") * rotateSpeed; // Ввод: вращение
+
+       
 
       /*   vInput = Input.GetAxis("Vertical") * moveSpeed;
 
@@ -74,5 +84,20 @@ public class PlayerBehaviour : MonoBehaviour
         return grounded; // Возвращаем результат проверки
     }
 
+    void OnTriggerEnter( Collider collision) 
+    {
+        Debug.Log($"Столкновение с: {collision.gameObject.name}, тег: {collision.gameObject.tag}");
 
+        if(collision.gameObject.CompareTag("Enemy")) 
+        {
+            gameManager.HP -= 1; // Уменьшаем здоровье игрока
+            Debug.Log("Hit by enemy!");
+
+            if (damageSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(damageSound); // Воспроизводим звук получения урона
+            }
+            
+        }
+    }
 }
