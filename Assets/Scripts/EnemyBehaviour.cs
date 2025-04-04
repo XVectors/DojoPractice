@@ -81,11 +81,11 @@ public class EnemyBehaviour : MonoBehaviour
             Debug.Log("Enemy detected, chasing"); 
         }
 
-         if(other.gameObject.tag == "Bullet") 
-        {
-            enemyHealth -= 1; // Уменьшаем здоровье врага
-            Debug.Log("Enemy hit! Health: " + enemyHealth); // Выводим сообщение о попадании
-        }
+        //  if(other.gameObject.tag == "Bullet") 
+        // {
+        //     enemyHealth -= 1; // Уменьшаем здоровье врага
+        //     Debug.Log("Enemy hit! Health: " + enemyHealth); // Выводим сообщение о попадании
+        // }
     }
     
     void OnTriggerExit(Collider other) 
@@ -97,8 +97,11 @@ public class EnemyBehaviour : MonoBehaviour
         }
     }
 
-    void OnCollisionEnter(Collision collision) 
+    void OnCollisionEnter(Collision collision)
     {
-       
+        if (collision.gameObject.name == "Bullet(Clone)")
+        {
+            enemyHealth -= 1; // Уменьшаем здоровье врага
+        }
     }
 }

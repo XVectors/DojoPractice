@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections;
+using UnityEngine.UI; // Для работы с UI
 
 public class PlayerBehaviour : MonoBehaviour
 {
@@ -10,7 +12,10 @@ public class PlayerBehaviour : MonoBehaviour
     public GameObject bullet;
     public float bulletSpeed = 100f;
     public AudioClip damageSound;
+    public Image damageOverlay; // Ссылка на UI-элемент для эффекта
+    public float fadeDuration = 1f; // Длительность эффекта
 
+   
 
     private float vInput;
     private float hInput;
@@ -18,7 +23,8 @@ public class PlayerBehaviour : MonoBehaviour
     private CapsuleCollider col;
     private GameBehaviour gameManager;
     private AudioSource audioSource;
-
+    private Color overlayColor; // Текущий цвет наложения
+    private bool isFading = false; // Флаг для контроля эффекта
 
     void Start()
     {
@@ -27,6 +33,13 @@ public class PlayerBehaviour : MonoBehaviour
 
         gameManager = GameObject.Find("GameManager").GetComponent<GameBehaviour>(); // Получаем ссылку на GameManager
         audioSource = GetComponent<AudioSource>(); // Получаем компонент AudioSource
+        
+        if (damageOverlay != null)
+        {
+            overlayColor = damageOverlay.color;
+            overlayColor.a = 0; // Начальная прозрачность
+            damageOverlay.color = overlayColor;
+        }
     }
 
    
@@ -84,20 +97,82 @@ public class PlayerBehaviour : MonoBehaviour
         return grounded; // Возвращаем результат проверки
     }
 
-    void OnTriggerEnter( Collider collision) 
+   
+    void OnDrawGizmos()  // Добавил отрисовку Gizmos для капсулы для наглядности ее работы
     {
-        Debug.Log($"Столкновение с: {collision.gameObject.name}, тег: {collision.gameObject.tag}");
+        if (col == null) return; // Если коллайдер не найден - пропускаем
+
+        // 1. Рассчитываем нижнюю точку капсулы (как в IsGrounded)
+        Vector3 capsuleBottom = new Vector3(col.bounds.center.x, col.bounds.min.y, col.bounds.center.z);
+
+        // 2. Рисуем Gizmos (только в редакторе Unity)
+        Gizmos.color = Color.green; // Цвет зоны проверки
+
+        // а) Два полушария (верх и низ капсулы)
+        Gizmos.DrawWireSphere(col.bounds.center, distanceToGround);
+        Gizmos.DrawWireSphere(capsuleBottom, distanceToGround);
+
+        // б) Линии, соединяющие края полушарий (для наглядности)
+        Gizmos.DrawLine(
+            col.bounds.center + Vector3.right * distanceToGround,
+            capsuleBottom + Vector3.right * distanceToGround
+        );
+        Gizmos.DrawLine(
+            col.bounds.center - Vector3.right * distanceToGround,
+            capsuleBottom - Vector3.right * distanceToGround
+        );
+    }
+
+
+     void OnCollisionEnter( Collision collision) 
+    {
+                                        //Debug.Log($"Столкновение с: {collision.gameObject.name}, тег: {collision.gameObject.tag}");
 
         if(collision.gameObject.CompareTag("Enemy")) 
         {
             gameManager.HP -= 1; // Уменьшаем здоровье игрока
-            Debug.Log("Hit by enemy!");
+                                        //Debug.Log("Hit by enemy!");
 
             if (damageSound != null && audioSource != null)
             {
                 audioSource.PlayOneShot(damageSound); // Воспроизводим звук получения урона
             }
+
+             if (damageOverlay != null && !isFading)
+            {
+                StartCoroutine(ShowDamageEffect()); // Запускаем красный экран
+            }
             
         }
     }
+
+
+    private IEnumerator ShowDamageEffect()
+    {
+        isFading = true;
+
+        // Устанавливаем начальную непрозрачность
+        overlayColor.a = 1f;
+        damageOverlay.color = overlayColor;
+
+        // Постепенно уменьшаем прозрачность
+        float elapsedTime = 0f;
+        while (elapsedTime < fadeDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            overlayColor.a = Mathf.Lerp(1f, 0f, elapsedTime / fadeDuration);
+            damageOverlay.color = overlayColor;
+            yield return null;
+        }
+
+        // Убедимся, что прозрачность полностью исчезла
+        overlayColor.a = 0f;
+        damageOverlay.color = overlayColor;
+
+        isFading = false;
+    }
+
 }
+
+
+
